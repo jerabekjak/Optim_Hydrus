@@ -1,6 +1,7 @@
 import os
 import numpy as np
 from scipy.interpolate import interp1d
+from scipy.optimize import differential_evolution
 
 class Data(object):
     def __init__(self, time, val, position):
@@ -76,11 +77,14 @@ class Optim(object):
         # TODO
         #if not(len(params) == NMat): ERROR
         
+        nparams = len(params)
+        nmat = len(self.mat)
         i = 0
-        for p in params: # replace lines in selector 
+        for i in range(nmat): # replace lines in selector
+            ii = range(i*(nparams/nmat),((i+1)*nparams/nmat))
+            p = params[ii]
             str_ = ' '.join([str(elem) for elem in p]) + '\n'
             lines[26+i] = str_
-            i += 1
 
         with open(file_,'w') as f:
             f.writelines(lines)
@@ -158,18 +162,20 @@ class Optim(object):
         """
         cmd = './{} {}'.format(self.exe, self.hp)
 
+        print (params)
         self.set_params(params)
 
-        #os.system(cmd)
+        os.system(cmd)
 
         tmp = self.read_modeled()
         self.mod = ModData(tmp[0], tmp[1], tmp[2])
 
         ss = self.sumofsquares()
         print (ss)
-        #return (ss)
+        return (ss)
 
     def run(self):
         pass
-        initparams = self.get_params()
-        self.model(initparams)
+        bounds = [(0,0.2),(0.25,0.5),(0.0001, 0.1), (1.1, 1.7), (2, 10), (0.5,0.5),
+                  (0,0.2),(0.25,0.5),(0.0001, 0.1), (1.1, 1.7), (2, 10), (0.5,0.5)]
+        differential_evolution(self.model, bounds)
