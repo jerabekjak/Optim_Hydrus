@@ -1,5 +1,6 @@
 import os
 import numpy as np
+from scipy.interpolate import interp1d
 
 class Data(object):
     def __init__(self, time, val, position):
@@ -135,6 +136,22 @@ class Optim(object):
 
         return time, val, position
 
+    def _interpolate(self, val, time, time2):
+        f = interp1d(time, val)
+        return f(time2)
+
+    def sumofsquares(self):
+        
+        obsval = np.array([])
+        modval_interp = np.array([])
+        for imat in range(len(self.mat)):
+            obsval = np.append(obsval, self.obs.data[imat].val)
+            modval_interp = np.append(modval_interp, 
+            self._interpolate(self.mod.data[imat].val,
+            self.mod.data[imat].time, self.obs.data[imat].time))
+
+        return np.sum((np.array(obsval) - np.array(modval_interp))**2.)
+
     def model(self, params):
         """ params ::   thr ths Alfa n Ks l
         in case of 2 soils paras list of two lists
@@ -143,12 +160,13 @@ class Optim(object):
 
         self.set_params(params)
 
-        os.system(cmd)
+        #os.system(cmd)
 
-        tmp = self.read_measured()
-        mod = ModData(tmp[0], tmp[1], tmp[2])
+        tmp = self.read_modeled()
+        self.mod = ModData(tmp[0], tmp[1], tmp[2])
 
-        #ss = sumofsquares()
+        ss = self.sumofsquares()
+        print (ss)
         #return (ss)
 
     def run(self):
