@@ -21,6 +21,7 @@ class Optim(object):
 
         tmp = self.read_measured()
         self.obs = Data(tmp[0], tmp[1], tmp[2])
+        self.nmat = np.unique(self.obs.position)
 
     def get_params(self):
         file_ = '{}/{}'.format(self.hp, 'SELECTOR.IN')
@@ -54,6 +55,32 @@ class Optim(object):
         with open(file_,'w') as f:
             f.writelines(lines)
 
+    def read_modeled(self):
+        file_ = '{}/{}'.format(self.hp, 'Obs_Node.out')
+        with open(file_,'r') as f:
+            lines = f.readlines()
+
+        counter = 0
+        for line in lines:
+            if 'time' in line:
+                start = counter
+            if 'end' in line:
+                end = counter
+            counter += 1
+
+        print (start, end)
+        ctime = 0
+        time = []
+        val = []
+        position = []
+        for i in range(start+1, end):
+            line = lines[i].split()
+            time.append(line[ctime])
+            #val.append(line[2])
+            #position.append(line[4])
+
+        print (time[0:15])
+
     def read_measured(self):
         file_ = '{}/{}'.format(self.hp, 'Fit.out')
         with open(file_,'r') as f:
@@ -86,12 +113,13 @@ class Optim(object):
 
         self.set_params(params)
 
-        #os.system(cmd)
+        os.system(cmd)
 
-        ss = sumofsquares()
-        return (ss)
+        #ss = sumofsquares()
+        #return (ss)
 
     def run(self):
-        pass
+        self.read_modeled()
+        #pass
         #initparams = self.get_params()
         #self.model(initparams)
