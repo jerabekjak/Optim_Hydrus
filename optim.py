@@ -26,6 +26,20 @@ class ObsData(object):
             which = imat == position
             self.data.append(Data(time[which], val[which], position[which]))
         
+class ModData(object):
+    def __init__(self, time, val, position):
+
+        time = np.array([float(i) for i in time])
+        val = np.array([float(i) for i in val])
+        position = np.array([int(i) for i in position])
+        self.mat = np.unique(position)
+
+        self.data = []
+        for imat in self.mat:
+            which = imat == position
+            self.data.append(Data(time[which], val[which], position[which]))
+        
+
 
 class Optim(object):
     
@@ -36,7 +50,7 @@ class Optim(object):
 
         tmp = self.read_measured()
         self.obs = ObsData(tmp[0], tmp[1], tmp[2])
-        #self.nmat = np.unique(self.obs.position)
+        self.mat = self.obs.mat
 
     def get_params(self):
         file_ = '{}/{}'.format(self.hp, 'SELECTOR.IN')
@@ -89,11 +103,13 @@ class Optim(object):
         position = []
         for i in range(start+1, end):
             line = lines[i].split()
-            time.append(line[ctime])
-            #val.append(line[2])
-            #position.append(line[4])
+            for imat in self.mat:
+                cval = imat*3-1
+                time.append(line[ctime])
+                val.append(line[cval])
+                position.append(imat)
 
-        print (time[0:15])
+        return time, val, position
 
     def read_measured(self):
         file_ = '{}/{}'.format(self.hp, 'Fit.out')
@@ -129,11 +145,13 @@ class Optim(object):
 
         os.system(cmd)
 
+        tmp = self.read_measured()
+        mod = ModData(tmp[0], tmp[1], tmp[2])
+
         #ss = sumofsquares()
         #return (ss)
 
     def run(self):
-        #self.read_modeled()
         pass
-        #initparams = self.get_params()
-        #self.model(initparams)
+        initparams = self.get_params()
+        self.model(initparams)
