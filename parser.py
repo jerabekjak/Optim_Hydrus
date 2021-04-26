@@ -7,6 +7,9 @@ def read_parser():
         description=textwrap.dedent('''\
          Optimize HYDRUS1D (Simunek) with scipy optmization methos
          ---------------------------------------------------------
+         The directory needs to contain the Fit.out file. The optimization
+         needs to be run at least once with the Hydru1d.exe. Measured
+         data are extracted from the Fit.out file. 
          '''))
 
     parser.add_argument(
