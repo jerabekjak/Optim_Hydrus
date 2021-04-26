@@ -54,6 +54,10 @@ class Optim(object):
         self.obs = ObsData(tmp[0], tmp[1], tmp[2])
         self.mat = self.obs.mat
 
+        self.err = '{}{}'.format(self.hp, 'Error.msg')
+        if os.path.exists(self.err):
+            os.remove(self.err)
+
     def get_params(self):
         file_ = '{}/{}'.format(self.hp, 'SELECTOR.IN')
         with open(file_,'r') as f:
@@ -107,12 +111,16 @@ class Optim(object):
         val = []
         position = []
         for i in range(start+1, end):
-            line = lines[i].split()
+            line = lines[i].replace('*', ' ').split()
             for imat in self.mat:
                 cval = imat*3-1
-                time.append(line[ctime])
-                val.append(line[cval])
-                position.append(imat)
+                try: 
+                    float(line[ctime])
+                    time.append(line[ctime])
+                    val.append(line[cval])
+                    position.append(imat)
+                except:
+                    print ('error lines')
 
         return time, val, position
 
@@ -166,6 +174,11 @@ class Optim(object):
         self.set_params(params)
 
         os.system(cmd)
+        print (os.path.exists(self.err))
+        if os.path.exists(self.err):
+            os.remove(self.err)
+            print (100000)
+            return (100000)
 
         tmp = self.read_modeled()
         self.mod = ModData(tmp[0], tmp[1], tmp[2])
@@ -176,6 +189,6 @@ class Optim(object):
 
     def run(self):
         pass
-        bounds = [(0,0.2),(0.25,0.5),(0.0001, 0.1), (1.1, 1.7), (2, 10), (0.5,0.5),
-                  (0,0.2),(0.25,0.5),(0.0001, 0.1), (1.1, 1.7), (2, 10), (0.5,0.5)]
+        bounds = [(0,0.2),(0.25,0.5),(0.0001, 0.1), (1.25, 1.37), (2, 10), (0.5,0.5),
+                  (0,0.2),(0.25,0.5),(0.0001, 0.1), (1.21, 1.37), (2, 10), (0.5,0.5)]
         differential_evolution(self.model, bounds)
