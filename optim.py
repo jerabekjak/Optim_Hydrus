@@ -61,6 +61,7 @@ class Optim(object):
             os.remove(self.err)
 
         self.outfile = open('{}/{}'.format(self.outdir, 'rrsqrt-pamameters.txt'),'w')
+        self.Counter = 0
 
     def get_params(self):
         file_ = '{}/{}'.format(self.hp, 'SELECTOR.IN')
@@ -197,7 +198,8 @@ class Optim(object):
         self.outfile.write(outline)
         print (ss)
 
-        newresults = os.path.split(self.outdir)
+        newresults = os.path.split(self.outdir)[1] + str(self.Counter).zfill(4)
+        print (newresults)
         return (ss)
 
     def run(self):
