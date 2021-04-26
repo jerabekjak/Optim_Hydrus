@@ -3,14 +3,29 @@ import numpy as np
 
 class Data(object):
     def __init__(self, time, val, position):
+
         self._n = len(time)
         self.time = np.zeros(self._n, float)
         self.val = np.zeros(self._n, float)
         self.positoin = np.zeros(self._n, float)
 
-        self.time = [float(i) for i in time]
-        self.val = [float(i) for i in val]
-        self.position = [int(i) for i in position]
+        self.time = np.array([float(i) for i in time])
+        self.val = np.array([float(i) for i in val])
+        self.position = np.array([int(i) for i in position])
+
+class ObsData(object):
+    def __init__(self, time, val, position):
+
+        time = np.array([float(i) for i in time])
+        val = np.array([float(i) for i in val])
+        position = np.array([int(i) for i in position])
+        self.mat = np.unique(position)
+
+        self.data = []
+        for imat in self.mat:
+            which = imat == position
+            self.data.append(Data(time[which], val[which], position[which]))
+        
 
 class Optim(object):
     
@@ -20,8 +35,8 @@ class Optim(object):
         self.exe = 'H1D_CALC.EXE'
 
         tmp = self.read_measured()
-        self.obs = Data(tmp[0], tmp[1], tmp[2])
-        self.nmat = np.unique(self.obs.position)
+        self.obs = ObsData(tmp[0], tmp[1], tmp[2])
+        #self.nmat = np.unique(self.obs.position)
 
     def get_params(self):
         file_ = '{}/{}'.format(self.hp, 'SELECTOR.IN')
@@ -68,7 +83,6 @@ class Optim(object):
                 end = counter
             counter += 1
 
-        print (start, end)
         ctime = 0
         time = []
         val = []
@@ -119,7 +133,7 @@ class Optim(object):
         #return (ss)
 
     def run(self):
-        self.read_modeled()
-        #pass
+        #self.read_modeled()
+        pass
         #initparams = self.get_params()
         #self.model(initparams)
