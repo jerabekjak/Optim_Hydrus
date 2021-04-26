@@ -1,7 +1,9 @@
 import os
 import numpy as np
+import math
 from scipy.interpolate import interp1d
 from scipy.optimize import differential_evolution
+from scipy.optimize import minimize
 
 class Data(object):
     def __init__(self, time, val, position):
@@ -57,6 +59,8 @@ class Optim(object):
         self.err = '{}{}'.format(self.hp, 'Error.msg')
         if os.path.exists(self.err):
             os.remove(self.err)
+
+        self.outfile = open('{}/{}'.format(self.outdir, 'rrsqrt-pamameters.txt'),'w')
 
     def get_params(self):
         file_ = '{}/{}'.format(self.hp, 'SELECTOR.IN')
@@ -170,25 +174,37 @@ class Optim(object):
         """
         cmd = './{} {}'.format(self.exe, self.hp)
 
-        print (params)
+        params[2] = 10**params[2]
+        params[8] = 10**params[8]
         self.set_params(params)
+        print (params)
 
         os.system(cmd)
-        print (os.path.exists(self.err))
         if os.path.exists(self.err):
             os.remove(self.err)
-            print (100000)
-            return (100000)
+            ss = 100000
+            str_ = ' '.join([str(elem) for elem in params])
+            outline = '{} {}\n'.format(ss, str_)
+            self.outfile.write(outline)
+            return (ss)
 
         tmp = self.read_modeled()
         self.mod = ModData(tmp[0], tmp[1], tmp[2])
 
         ss = self.sumofsquares()
+        str_ = ' '.join([str(elem) for elem in params])
+        outline = '{} {}\n'.format(ss, str_)
+        self.outfile.write(outline)
         print (ss)
+
+        newresults = os.path.split(self.outdir)
         return (ss)
 
     def run(self):
         pass
-        bounds = [(0,0.2),(0.25,0.5),(0.0001, 0.1), (1.25, 1.37), (2, 10), (0.5,0.5),
-                  (0,0.2),(0.25,0.5),(0.0001, 0.1), (1.21, 1.37), (2, 10), (0.5,0.5)]
+        bounds = [(0,0.2),(0.25,0.5),(-4, -1), (1.25, 1.37), (2, 10), (0.5,0.5),
+                  (0,0.2),(0.25,0.5),(-4, -1), (1.21, 1.37), (2, 10), (0.5,0.5)]
+        #bounds = [0.2,0.5,0.014, 1.25, 10, 0.5,
+        #          0.2,0.5,0.014, 1.25, 10, 0.5]
         differential_evolution(self.model, bounds)
+        #minimize(self.model, bounds, method='CG')
