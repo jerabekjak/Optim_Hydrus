@@ -1,6 +1,7 @@
 import os
 import numpy as np
 import math
+import shutil
 from scipy.interpolate import interp1d
 from scipy.optimize import differential_evolution
 from scipy.optimize import minimize
@@ -59,6 +60,10 @@ class Optim(object):
         self.err = '{}{}'.format(self.hp, 'Error.msg')
         if os.path.exists(self.err):
             os.remove(self.err)
+
+        if os.path.exists(self.outdir):
+            shutil.rmtree(self.outdir)
+        os.mkdir(self.outdir)
 
         self.outfile = open('{}/{}'.format(self.outdir, 'rrsqrt-pamameters.txt'),'w')
         self.Counter = 0
@@ -174,6 +179,9 @@ class Optim(object):
         in case of 2 soils paras list of two lists
         """
         cmd = './{} {}'.format(self.exe, self.hp)
+        newresults = '{}.{}'.format(os.path.split(self.outdir)[1],
+        str(self.Counter).zfill(4))
+        self.Counter += 1
 
         params[2] = 10**params[2]
         params[8] = 10**params[8]
@@ -189,6 +197,9 @@ class Optim(object):
             self.outfile.write(outline)
             return (ss)
 
+
+        shutil.copytree(self.hp, '{}/{}'.format(self.outdir, newresults))
+
         tmp = self.read_modeled()
         self.mod = ModData(tmp[0], tmp[1], tmp[2])
 
@@ -198,14 +209,12 @@ class Optim(object):
         self.outfile.write(outline)
         print (ss)
 
-        newresults = os.path.split(self.outdir)[1] + str(self.Counter).zfill(4)
-        print (newresults)
         return (ss)
 
     def run(self):
         pass
-        bounds = [(0,0.2),(0.25,0.5),(-4, -1), (1.25, 1.37), (2, 10), (0.5,0.5),
-                  (0,0.2),(0.25,0.5),(-4, -1), (1.21, 1.37), (2, 10), (0.5,0.5)]
+        bounds = [(0,0.2),(0.25,0.3),(-4, -1), (1.25, 1.37), (2, 10), (0.5,0.5),
+                  (0,0.05),(0.25,0.3),(-4, -1), (1.21, 1.37), (2, 10), (0.5,0.5)]
         #bounds = [0.2,0.5,0.014, 1.25, 10, 0.5,
         #          0.2,0.5,0.014, 1.25, 10, 0.5]
         differential_evolution(self.model, bounds)
