@@ -1,3 +1,5 @@
+"""This modelu the Hydrus1D model directory in the program.
+"""
 import argparse
 import textwrap
 

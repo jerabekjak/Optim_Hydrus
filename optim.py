@@ -1,3 +1,15 @@
+"""This modelu prepares and performs the optimization of the model Hydrus1D
+
+This modelu read the observer data from existing Fit.out file. It read the
+modeled data after the Hydrus computation finishes and compare the modeled and
+measured data. The scipy.potimize package is then used to performs the
+optimization of parameters. 
+"""
+
+__author__ = "Jakub Jerabek"
+__license__ = "GPL"
+__email__ = "jakub.jerabek@fsv.cvut.cz"
+
 import os
 import numpy as np
 import math
