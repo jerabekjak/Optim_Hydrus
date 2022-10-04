@@ -14,6 +14,7 @@ import os
 import numpy as np
 import math
 import shutil
+from sys import platform
 from scipy.interpolate import interp1d
 from scipy.optimize import differential_evolution
 from scipy.optimize import minimize
@@ -31,43 +32,53 @@ class Data(object):
         self.position = np.array([int(i) for i in position])
 
 class ObsData(object):
-    def __init__(self, time, val, position):
+    def __init__(self, time, val, position, nmat):
 
         time = np.array([float(i) for i in time])
         val = np.array([float(i) for i in val])
         position = np.array([int(i) for i in position])
-        self.mat = np.unique(position)
+        self.nmat = nmat
 
         self.data = []
-        for imat in self.mat:
-            which = imat == position
+        for ipos in np.unique(position):
+            which = ipos == position
             self.data.append(Data(time[which], val[which], position[which]))
         
 class ModData(object):
-    def __init__(self, time, val, position):
+    def __init__(self, time, val, position, nmat):
 
         time = np.array([float(i) for i in time])
         val = np.array([float(i) for i in val])
         position = np.array([int(i) for i in position])
-        self.mat = np.unique(position)
+        self.nmat = nmat
 
         self.data = []
-        for imat in self.mat:
-            which = imat == position
+        for ipos in np.unique(position):
+            which = ipos == position
             self.data.append(Data(time[which], val[which], position[which]))
         
 
 
 class Optim(object):
     
-    def __init__(self,hydro_proj, outdir):
+    def __init__(self, hydro_proj, outdir):
         self.hp = hydro_proj
         self.outdir = outdir
-        self.exe = 'H1D_CALC.EXE'
+
+        if platform == "linux" or platform == "linux2":
+            self.exe = 'wine H1D_CALC.EXE'
+            self.cmd = '{} {}'.format(self.exe, self.hp)
+        elif platform == "win32":
+            self.exe = 'H1D_CALC.EXE'
+            self.cmd = './{} {}'.format(self.exe, self.hp)
+        else: 
+            import sys
+            sys.exit('unknown platform')
 
         tmp = self.read_measured()
-        self.obs = ObsData(tmp[0], tmp[1], tmp[2])
-        self.mat = self.obs.mat
+        self.obs = ObsData(tmp[0], tmp[1], tmp[2], tmp[3])
+        self.nmat = self.obs.nmat
+        self.obsnodes = len(self.obs.data)
 
         self.err = '{}{}'.format(self.hp, 'Error.msg')
         if os.path.exists(self.err):
@@ -104,7 +115,8 @@ class Optim(object):
         #if not(len(params) == NMat): ERROR
         
         nparams = len(params)
-        nmat = len(self.mat)
+        nmat = self.nmat
+
         i = 0
         for i in range(nmat): # replace lines in selector
             ii = range(i*(nparams/nmat),((i+1)*nparams/nmat))
@@ -134,8 +146,8 @@ class Optim(object):
         position = []
         for i in range(start+1, end):
             line = lines[i].replace('*', ' ').split()
-            for imat in self.mat:
-                cval = imat*3-1
+            for imat in range(self.obsnodes):
+                cval = imat*3+1
                 try: 
                     float(line[ctime])
                     time.append(line[ctime])
@@ -144,7 +156,7 @@ class Optim(object):
                 except:
                     print ('error lines')
 
-        return time, val, position
+        return time, val, position, self.nmat
 
     def read_measured(self):
         file_ = '{}/{}'.format(self.hp, 'Fit.out')
@@ -168,7 +180,12 @@ class Optim(object):
             val.append(line[2])
             position.append(line[4])
 
-        return time, val, position
+        file_ = '{}/{}'.format(self.hp, 'SELECTOR.IN')
+        with open(file_,'r') as f:
+            lines = f.readlines()
+        NMat = int(lines[13].split()[0])
+
+        return time, val, position, NMat
 
     def _interpolate(self, val, time, time2):
         f = interp1d(time, val)
@@ -178,7 +195,7 @@ class Optim(object):
         
         obsval = np.array([])
         modval_interp = np.array([])
-        for imat in range(len(self.mat)):
+        for imat in range(self.obsnodes):
             obsval = np.append(obsval, self.obs.data[imat].val)
             modval_interp = np.append(modval_interp, 
             self._interpolate(self.mod.data[imat].val,
@@ -190,17 +207,18 @@ class Optim(object):
         """ params ::   thr ths Alfa n Ks l
         in case of 2 soils paras list of two lists
         """
-        cmd = './{} {}'.format(self.exe, self.hp)
         newresults = '{}.{}'.format(os.path.split(self.outdir)[1],
-        str(self.Counter).zfill(4))
+            str(self.Counter).zfill(4))
         self.Counter += 1
 
         params[2] = 10**params[2]
         params[8] = 10**params[8]
-        self.set_params(params)
-        print (params)
 
-        os.system(cmd)
+        self.set_params(params)
+
+        # RUN HYDRUS
+        os.system(self.cmd)
+
         if os.path.exists(self.err):
             os.remove(self.err)
             ss = 100000
@@ -213,7 +231,7 @@ class Optim(object):
         shutil.copytree(self.hp, '{}/{}'.format(self.outdir, newresults))
 
         tmp = self.read_modeled()
-        self.mod = ModData(tmp[0], tmp[1], tmp[2])
+        self.mod = ModData(tmp[0], tmp[1], tmp[2], tmp[3])
 
         ss = self.sumofsquares()
         str_ = ' '.join([str(elem) for elem in params])
